@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Xdmf xmlns:xi="http://www.w3.org/2001/XInclude" Version="3.0">
+  <Domain>
+    <Grid Name="Grid">
+      <Geometry Origin="" Type="XYZ">
+        <DataItem DataType="Float" Dimensions="256 3" Format="HDF" Precision="4">test.h5:Data0</DataItem>
+      </Geometry>
+      <Topology Dimensions="512" Type="Mixed">
+        <DataItem DataType="Int" Dimensions="2048" Format="HDF" Precision="8">test.h5:Data1</DataItem>
+      </Topology>
+      <Attribute Center="Cell" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="STLSolidLabeling" Type="Scalar">
+        <DataItem DataType="Float" Dimensions="512" Format="HDF" Precision="4">test.h5:Data2</DataItem>
+      </Attribute>
+    </Grid>
+  </Domain>
+</Xdmf>
