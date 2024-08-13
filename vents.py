@@ -1,15 +1,14 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import pywavefront
-from sklearn.cluster import KMeans
-from scipy.spatial.distance import cdist
-from scipy.spatial import KDTree
-from sklearn.neighbors import KDTree as KDTreetwo
-import time
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-from collections import Counter
-import random
-import time
+# Importing various packages. 
+import numpy as np # Package for array manipulation.
+import matplotlib.pyplot as plt # Plotting package.
+import pywavefront # To extract vertices and faces from the obj file.
+from sklearn.cluster import KMeans # Finding close neighbours. 
+from scipy.spatial.distance import cdist # Finding close neighbours.
+from scipy.spatial import KDTree # Finding close neighbours.
+from sklearn.neighbors import KDTree as KDTreetwo # Finding close neighbours.
+import time # Taking time. 
+from collections import Counter # Counter. 
+import random 
 import csv
 import pandas as pd
 from datetime import datetime
@@ -17,7 +16,8 @@ from datetime import datetime
 class Particle:
 	def __init__(self, x, y, z, vx, vy, vz):
 		"""
-		Particle class that holds all relevant information.
+		Particle class that holds all relevant information for 
+		each particle.
 		"""
 		self.x = x
 		self.y = y 
@@ -27,13 +27,18 @@ class Particle:
 		self.vz = vz
 
 	def update_position(self, x, y, z):
+		"""
+		Updates position of the particle. 
+		"""
 		self.x = x 
 		self.y = y 
 		self.z = z
 
 def ray_intersect_triangle(p0, p1, v1, v2, v3):
-	# Möller–Trumbore ray-triangle intersection algorithm
-	#EPSILON = 1e-4
+	"""Möller–Trumbore ray-triangle intersection algorithm
+	that finds out if a ray intersects with a triangle or not. 
+	This is just a mathematical formula. 
+	"""
 	EPSILON = 1e-9
 	edge1 = v2 - v1
 	edge2 = v3 - v1
@@ -58,14 +63,22 @@ def ray_intersect_triangle(p0, p1, v1, v2, v3):
 		return None  # This means that there is a line intersection but not a ray intersection.
 
 class FindMyVents:
+	"""
+	The vent class that holds all relevent information 
+	about the model where the vents are to be located. 
+	"""
 	def __init__(self, dt, steps, file=None, up_vec=np.array([0, 1, 0]), radius=2):
-		self.file = file
-		self.up_vec = up_vec
-		self.dt = dt 
-		self.steps = steps
-		self.radius = radius
+		"""
+		Initializing all of relevent information about the file. 
+		"""
 
-		if len(file[0]) > 1:
+		self.file = file # Filename. 
+		self.up_vec = up_vec # Up orientation for vector. 
+		self.dt = dt # Timestep. 
+		self.steps = steps # How many steps?
+		self.radius = radius # Radius which is part of various parts of the program. 
+
+		if len(file[0]) > 1: # Figures out if a file is included or not. 
 			self.vertices = file[0]
 			self.faces = file[1]
 			self.normals = []
@@ -74,7 +87,7 @@ class FindMyVents:
 
 		self.find_dimensions()
 
-		centroids = []
+		centroids = [] # Centers of eaach of the facese. 
 
 		for face in self.faces:
 			if len(face) == 3:  # Triangle
@@ -85,9 +98,12 @@ class FindMyVents:
 
 		self.radius = np.max([self.x_range[1] - self.x_range[0], self.y_range[1] - self.y_range[0], self.x_range[1] - self.x_range[0]])/10
 
-		self.original_vertices = self.vertices
+		self.original_vertices = self.vertices # Storing original vertices. 
 
 	def find_dimensions(self):
+		"""
+		Finds a box around the model. 
+		"""
 		min_x = np.min(self.vertices[:, 0])
 		max_x = np.max(self.vertices[:, 0])
 		min_y = np.min(self.vertices[:, 1])
@@ -100,6 +116,10 @@ class FindMyVents:
 		self.z_range = np.array([min_z, max_z])
 
 	def obj_to_point(self):
+		"""
+		Creating vertices and faces from the obj file, so that 
+		it can be used in this program. 
+		"""
 		file = self.file
 		scene = pywavefront.Wavefront(file, create_materials=True, collect_faces=True)
 		points = np.array(scene.vertices)
@@ -107,6 +127,9 @@ class FindMyVents:
 		self.faces = scene.mesh_list[0].faces
 
 	def ray_hits_face(self, p0, p1):
+		"""
+		Determins if a ray hits any face in the model. 
+		"""
 		faces = self.faces
 		vertices = self.vertices
 
@@ -123,9 +146,17 @@ class FindMyVents:
 		return None, None
 
 	def centroid_of_triangle(self, v1, v2, v3):
+		"""
+		Finds the center of a face. 
+		"""
 		return (v1 + v2 + v3) / 3
 
 	def hit_face(self, particle, faceidx, intersection_point):
+		"""
+		This essentialy figures out how the ray is updated
+		if a ray hits a new face such that it follows this new direction. 
+		"""		
+
 		direction_vector = np.array([particle.vx, particle.vy, particle.vz])
 
 		face = self.faces[faceidx]
@@ -150,7 +181,6 @@ class FindMyVents:
 			# Rotate by pi in the plane
 			plane_component = -plane_component
 
-
 		plane_component /= np.linalg.norm(plane_component)
 
 		particle.vx = plane_component[0]*20 # This needs to be changd and just randomly set. 
@@ -163,6 +193,10 @@ class FindMyVents:
 		particle.z = intersection_point[2]
 
 	def plot_shape_and_path(self, path):
+		"""
+		Plots path of one particle, should be a list of 
+		x, y and z coordinates. 
+		"""
 		fig = plt.figure()
 		ax = plt.axes(projection='3d')
 		ax.scatter3D(self.vertices[:, 0], self.vertices[:, 1], self.vertices[:, 2] ,color="black", label='shape', alpha=0.3)
@@ -171,6 +205,9 @@ class FindMyVents:
 		plt.show()
 
 	def show_shape(self):
+		"""
+		Show the shape of the model. 
+		"""
 		fig = plt.figure()
 		ax = plt.axes(projection='3d')
 		ax.scatter3D(self.vertices[:, 0], self.vertices[:, 1], self.vertices[:, 2] ,color="black", label='shape', alpha=0.3)
@@ -182,6 +219,10 @@ class FindMyVents:
 		plt.show()
 
 	def top_point_face(self, faceidx):
+		"""
+		This located the highest point in a face with regards 
+		to the up direction. 
+		"""
 		face = self.faces[faceidx]
 
 		if self.up_vec[0] == 1:
@@ -195,6 +236,10 @@ class FindMyVents:
 			return self.vertices[face][maxxer]
 
 	def create_particles(self, n):
+		"""
+		Creates the particle to be simulated and their
+		x, y and z coordinates. 
+		"""
 		particles = np.empty((n, 3))
 		particles[:, 0] = np.random.uniform(self.x_range[0], self.x_range[1], n)
 		particles[:, 1] = np.random.uniform(self.y_range[0], self.y_range[1], n)
@@ -218,6 +263,9 @@ class FindMyVents:
 		return np.nonzero(self.faces == vertex_index)[0]
 
 	def is_flat(self, top_point):
+		"""
+		Checks if a face is flat or not. 
+		"""
 		matches = np.all(self.vertices == top_point, axis=1)
 
 		# Find the indices where the rows match
@@ -245,6 +293,9 @@ class FindMyVents:
 		return False
 
 	def close_point(self, particle):
+		"""
+		Finds the closest point to a particle. 
+		"""
 		tree = KDTree(self.centroids)
 
 		indices = tree.query_ball_point(np.array([particle.x, particle.y, particle.z]), self.radius)
@@ -274,6 +325,7 @@ class FindMyVents:
 			maxxer = np.argmax(points_within_radius[:, 2])
 
 			if points_within_radius[maxxer][2] > particle.z:
+				# Updates position. 
 				particle.x = points_within_radius[maxxer][0]
 				particle.y = points_within_radius[maxxer][1]
 				particle.z = points_within_radius[maxxer][2]
@@ -283,6 +335,9 @@ class FindMyVents:
 				return False
 
 	def face_smudge(self, particle):
+		"""
+		Smudging for easthtics. 
+		"""
 		index = np.where(np.all(self.centroids == np.array([particle.x, particle.y, particle.z]), axis=1))[0]
 		if len(index) == 0:
 			return None
@@ -302,25 +357,27 @@ class FindMyVents:
 
 	def simulate(self, particle):
 		"""
-		Need to include exploration so it doesnt terminate
-		at lower points. 
+		Actually simulates the path of the particle. 
 		"""
-		positions = []
-		dt = self.dt
+		positions = [] # Storage of all the positions of the particle. 
+		dt = self.dt 
 		steps = self.steps
 
-		positions.append([particle.x, particle.y, particle.z])
-		lastface = None
+		positions.append([particle.x, particle.y, particle.z]) # Appends the starting poistion. 
+		lastface = None 
 
 		for i in range(1, steps):
+			"""
+			For all steps. 
+			"""
 			p0 = np.array([particle.x, particle.y, particle.z])
-			p1 = p0 + dt * np.array([particle.vx, particle.vy, particle.vz])
-			hit_face_idx, intersection_point = self.ray_hits_face(p0, p1)
+			p1 = p0 + dt * np.array([particle.vx, particle.vy, particle.vz]) # Create an extended ray. 
+			hit_face_idx, intersection_point = self.ray_hits_face(p0, p1) # Check if ray hits a face. 
 
 			if hit_face_idx == None and lastface == None: # Line didnt hit anything from start.
 				return None
 
-			if hit_face_idx is not None:
+			if hit_face_idx is not None: # Update lastface and position. 
 				self.hit_face(particle, hit_face_idx, intersection_point)
 				lastface = hit_face_idx
 
@@ -346,6 +403,9 @@ class FindMyVents:
 			positions.append([particle.x, particle.y, particle.z])
 
 	def rotate_vertices(self, dimension, theta, extra_points = []):
+		"""
+		Rotates the vertices according to a given theta. 
+		"""
 		theta_rad = np.radians(theta)  # Convert degrees to radians
 
 		if dimension == 'x':
@@ -371,6 +431,9 @@ class FindMyVents:
 			return extra_points @ R.T
 
 	def find_vents(self, n, nvents):
+		"""
+		This does the simulation for each of the particles. 
+		"""
 		particles = self.create_particles(n)
 		directions = self.create_directions(n)
 		tops = []
@@ -399,6 +462,9 @@ class FindMyVents:
 		self.tops = np.array(toppers)
 
 	def show_vents(self):
+		"""
+		Shows vents. 
+		"""
 		fig = plt.figure()
 		ax = fig.add_subplot(111, projection='3d')
 
@@ -505,6 +571,9 @@ class FindMyVents:
 
 
 def read_obj(file_path):
+	"""
+	Reads and writes and object file. 
+	"""
     vertices = []
     other_lines = []
 
@@ -526,11 +595,13 @@ def write_obj(file_path, vertices, other_lines):
         for line in other_lines:
             file.write(line)
 
-# Example usage:
+
+
+"""# Example usage:
 ventfinder = FindMyVents(10, 1000, file="models/Crank.obj", up_vec=np.array([0, 0, 1]))
 ventfinder.find_vents(5000, 100)
 ventfinder.create_all_files()
-
+"""
 
 
 

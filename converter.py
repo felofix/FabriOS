@@ -11,8 +11,8 @@ def read_vtk_custom(file_path):
         lines = file.readlines()
     
     # Read the vertices
-    vertices_start_index = lines.index('POINTS 1862 double\n') + 1
-    vertices_end_index = lines.index('CELLS 9285 43279\n')
+    vertices_start_index = lines.index('POINTS 118239 double\n') + 1
+    vertices_end_index = lines.index('CELLS 683869 3378385\n')
     for line in lines[vertices_start_index:vertices_end_index - 1]:
         x, y, z = map(float, line.split())
         vertices.append((x, y, z))
@@ -32,10 +32,8 @@ def read_vtk_custom(file_path):
     return vertices, tetrahedrons
 
 # Example usage
-file_path = 'meshes/sherrif.vtk'
+file_path = 'meshes/cool.vtk'
 vertices, tetrahedrons = read_vtk_custom(file_path)
-
-
 
 # Create mesh using meshio
 mesh = meshio.Mesh(
